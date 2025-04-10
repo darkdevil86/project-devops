@@ -25,13 +25,18 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker Image
-        run: docker tag devops-app:latest <YOUR_DOCKER_REGISTRY>/devops-app:latest && docker push <YOUR_DOCKER_REGISTRY>/devops-app:latest
+        run: docker tag devops-app:latest darkdevil086/devops-app:latest && docker push darkdevil086/devops-app:latest
 
       - name: Set up Kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
 
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/deployment.yaml
