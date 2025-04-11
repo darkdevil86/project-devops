@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::657433765207:role/GitHubActionsEKSRole
+          role-to-assume: arn:aws:iam::657433765207:role/DevOpsEKSRole
           aws-region: us-east-1
 
       - name: Update kubeconfig for EKS
