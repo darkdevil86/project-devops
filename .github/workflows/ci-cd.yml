@@ -31,13 +31,17 @@ jobs:
           docker tag devops-app:latest darkdevil086/devops-app:latest
           docker push darkdevil086/devops-app:latest
 
-      # AWS & EKS Setup
+      # AWS Credentials Setup
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
+      # Install jq (required for assume-role parsing)
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       # Assume Role for EKS Access
       - name: Assume DevOpsEKSRole
@@ -51,13 +55,15 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
           echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
 
-      # Update kubeconfig and Deploy
+      # Update kubeconfig for EKS
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --region us-east-1 --name devops-cluster
 
+      # Debug Identity (Optional)
       - name: Debug IAM Identity
         run: aws sts get-caller-identity
 
+      # Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/deployment.yaml
