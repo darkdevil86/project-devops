@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
@@ -13,7 +17,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Docker Setup
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -31,36 +34,12 @@ jobs:
           docker tag devops-app:latest darkdevil086/devops-app:latest
           docker push darkdevil086/devops-app:latest
 
-      # Step 1: Configure AWS credentials (IAM User)
-      - name: Configure AWS credentials (IAM User)
+      - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::657433765207:role/GitHubActionsEKSRole
           aws-region: us-east-1
 
-      # Step 2: Assume the DevOpsEKSRole
-      - name: Assume DevOpsEKSRole
-        id: assume-role
-        run: |
-          CREDS=$(aws sts assume-role \
-            --role-arn arn:aws:iam::657433765207:role/DevOpsEKSRole \
-            --role-session-name github-deployer-session)
-
-          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
-          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
-
-      # Step 3: Reconfigure AWS credentials using assumed role
-      - name: Configure AWS credentials from assumed role
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
-
-      # Step 4: Update kubeconfig for EKS
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --region us-east-1 --name devops-cluster
 
@@ -69,7 +48,6 @@ jobs:
           aws sts get-caller-identity
           kubectl auth can-i --list
 
-      # Step 5: Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/deployment.yaml
