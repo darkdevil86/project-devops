@@ -42,6 +42,9 @@ jobs:
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --region us-east-1 --name devops-cluster
 
+      - name: Debug IAM Identity
+        run: aws sts get-caller-identity
+
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/deployment.yaml
