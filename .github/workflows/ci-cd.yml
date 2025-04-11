@@ -37,8 +37,21 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # North Virginia
+          aws-region: us-east-1
 
+      # Assume Role for EKS Access
+      - name: Assume DevOpsEKSRole
+        id: assume-role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn arn:aws:iam::657433765207:role/DevOpsEKSRole \
+            --role-session-name github-deployer-session)
+
+          echo "AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r '.Credentials.AccessKeyId')" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r '.Credentials.SecretAccessKey')" >> $GITHUB_ENV
+          echo "AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')" >> $GITHUB_ENV
+
+      # Update kubeconfig and Deploy
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --region us-east-1 --name devops-cluster
 
