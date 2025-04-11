@@ -31,7 +31,7 @@ jobs:
           docker tag devops-app:latest darkdevil086/devops-app:latest
           docker push darkdevil086/devops-app:latest
 
-      # Step 1: Configure AWS credentials (IAM User with permission to assume role)
+      # Step 1: Configure AWS credentials (IAM User)
       - name: Configure AWS credentials (IAM User)
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -60,12 +60,14 @@ jobs:
           aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      # Step 4: Update kubeconfig using assumed role
+      # Step 4: Update kubeconfig for EKS
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --region us-east-1 --name devops-cluster
 
       - name: Debug IAM Identity
-        run: aws sts get-caller-identity
+        run: |
+          aws sts get-caller-identity
+          kubectl auth can-i --list
 
       # Step 5: Deploy to Kubernetes
       - name: Deploy to Kubernetes
